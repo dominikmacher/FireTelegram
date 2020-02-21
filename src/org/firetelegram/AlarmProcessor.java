@@ -7,10 +7,12 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser; 
 import org.json.simple.parser.ParseException;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,10 +36,13 @@ public class AlarmProcessor {
 		
 		final String urlEinsatz = "https://infoscreen.florian10.info/ows/infoscreen/einsatz.ashx";
 		final String urlHistory = "https://infoscreen.florian10.info/ows/infoscreen/historic.ashx";
+		
 		final String cookieName = prop.getProperty("cookieSessIdKey");
 		final String cookieValue = prop.getProperty("cookieSessIdVal");
 		final String cookieName2 = prop.getProperty("cookieTokenIdKey");
 		final String cookieValue2 = prop.getProperty("cookieTokenIdVal");
+        final String telegramApiToken = prop.getProperty("telegramApiToken");
+        final String telegramChatId = prop.getProperty("telegramChatId");
 
 		String jsonContent = _getJsonData(urlHistory, cookieName, cookieValue);
 
@@ -49,11 +54,9 @@ public class AlarmProcessor {
 		if (newAlarm != null) {
 						
 			String alarmText = _parseAlarmText(newAlarm);
-						
-			/**
-			 * TODO:
-			 *  Send Alarmtext via Telegram
-			 */
+			System.out.println(alarmText);
+			
+			_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
 			
 			/**
 			 * TODO:
@@ -63,6 +66,20 @@ public class AlarmProcessor {
 			
 		}
 		
+	}
+	
+	
+	private static void _sendMessageToTelegram(String text, String apiToken, String chatId) {
+        String urlString = "https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s";
+        urlString = String.format(urlString, apiToken, chatId, text);
+
+        try {
+            URL url = new URL(urlString);
+            URLConnection conn = url.openConnection();
+            InputStream is = new BufferedInputStream(conn.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+	    }
 	}
 	
 	
