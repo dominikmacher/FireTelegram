@@ -1,0 +1,5 @@
+*.class
+*.log
+.classpath
+.project
+config.properties
