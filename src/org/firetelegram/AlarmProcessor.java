@@ -8,6 +8,12 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,49 +29,111 @@ import javax.net.ssl.HttpsURLConnection;
 
 public class AlarmProcessor {
 
+	private static boolean DEBUG = false;
+	
 	public static void main(String[] args) throws IOException {
-
+		
+		String urlEinsatz = "https://infoscreen.florian10.info/ows/infoscreen/einsatz.ashx";
+		String urlHistory = "https://infoscreen.florian10.info/ows/infoscreen/historic.ashx";
+		
+		if (args.length > 0) { 
+			for (String parameter : args) {
+				if (parameter.toLowerCase().equals("-debug")) {
+					DEBUG = true;
+				}
+				else if (parameter.toLowerCase().equals("-history")) {
+					urlEinsatz = urlHistory;
+				}
+			}
+        } 
+		
 		Properties prop = new Properties();
 		InputStream inputStream = AlarmProcessor.class.getClassLoader().getResourceAsStream("config.properties");
 
         if (inputStream == null) {
-            System.out.println("Sorry, unable to find config.properties");
+            System.out.println("ERROR: cannot find properties file");
             return;
         }
         prop.load(inputStream);
-		
-		final String urlEinsatz = "https://infoscreen.florian10.info/ows/infoscreen/einsatz.ashx";
-		final String urlHistory = "https://infoscreen.florian10.info/ows/infoscreen/historic.ashx";
-		
+				
 		final String cookieName = prop.getProperty("cookieSessIdKey");
 		final String cookieValue = prop.getProperty("cookieSessIdVal");
 		final String cookieName2 = prop.getProperty("cookieTokenIdKey");
 		final String cookieValue2 = prop.getProperty("cookieTokenIdVal");
         final String telegramApiToken = prop.getProperty("telegramApiToken");
         final String telegramChatId = prop.getProperty("telegramChatId");
+        
+        final String processedAlarmsFileName = "processed_alarms.txt";
+		List<String> alreadyReportedAlarms = _readFile(processedAlarmsFileName);
 
-		String jsonContent = _getJsonData(urlHistory, cookieName, cookieValue);
-
-		List<String> alreadyReportedAlarms = new ArrayList<String>();
-		alreadyReportedAlarms.add("28456523");
-		alreadyReportedAlarms.add("28434323");
-		
+		String jsonContent = _getJsonData(urlEinsatz, cookieName, cookieValue);
 		JSONObject newAlarm = _checkForNewAlarm(jsonContent, alreadyReportedAlarms);
 		if (newAlarm != null) {
 						
 			String alarmText = _parseAlarmText(newAlarm);
-			System.out.println(alarmText);
 			
-			_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
-			
-			/**
-			 * TODO:
-			 *  Store Einsatznummer in CSV File = already reported
-			 *  einsatz.get("EinsatzNummer").toString()
-			 */
-			
+			if (DEBUG) {
+				System.out.println("Processed alarm \"" + alarmText + "\" - no telegram message sent.");
+			}
+			else {
+				// Do not send telegram messages in debug mode
+				_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
+			}
+
+			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim());
+		}
+		else {
+			if (DEBUG) {
+				System.out.println("...");
+			}
 		}
 		
+	}
+	
+	
+	private static void _writeToFile(String fileName, String text) {
+		File file = new File(fileName);
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+			System.out.println("ERROR: cannot create file");
+		} 
+		
+		try {
+			FileWriter fileWriter = new FileWriter(file, true);
+			BufferedWriter bufWriter = new BufferedWriter(fileWriter);
+			bufWriter.write(text);
+			bufWriter.newLine();
+			bufWriter.close();
+			fileWriter.close();
+		} catch (IOException e) {
+			System.out.println("ERROR: cannot write to file");
+		}
+	}
+
+	
+	private static List<String> _readFile(String fileName) {
+		File file = new File(fileName);
+		try {
+			file.createNewFile();
+		} catch (IOException e) {
+			System.out.println("ERROR: cannot create file");
+		} 
+		
+		ArrayList<String> listOfLines = new ArrayList<String>();
+		try {
+			BufferedReader bufReader = new BufferedReader(new FileReader(fileName));
+			String line = bufReader.readLine();
+		    while (line != null) {
+		      listOfLines.add(line);
+		      line = bufReader.readLine();
+		    }
+		    bufReader.close();
+		} catch (IOException e) {
+			System.out.println("ERROR: cannot read from file");
+		}
+	    
+		return listOfLines;
 	}
 	
 	
