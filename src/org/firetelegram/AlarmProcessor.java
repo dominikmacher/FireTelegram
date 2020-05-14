@@ -2,6 +2,8 @@ package org.firetelegram;
 
 import java.io.BufferedReader;
 
+
+
 import org.json.simple.JSONArray; 
 import org.json.simple.JSONObject; 
 import org.json.simple.parser.JSONParser; 
@@ -19,6 +21,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -139,9 +143,9 @@ public class AlarmProcessor {
 	
 	private static void _sendMessageToTelegram(String text, String apiToken, String chatId) {
         String urlString = "https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s";
-        urlString = String.format(urlString, apiToken, chatId, text);
-
+        
         try {
+        	urlString = String.format(urlString, apiToken, chatId, URLEncoder.encode(text, StandardCharsets.UTF_8.toString()));
             URL url = new URL(urlString);
             URLConnection conn = url.openConnection();
             InputStream is = new BufferedInputStream(conn.getInputStream());
