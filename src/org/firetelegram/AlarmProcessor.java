@@ -34,6 +34,7 @@ import javax.net.ssl.HttpsURLConnection;
 public class AlarmProcessor {
 
 	private static boolean DEBUG = false;
+	private static boolean TESTMODE = false;
 	
 	public static void main(String[] args) throws IOException {
 		
@@ -42,11 +43,21 @@ public class AlarmProcessor {
 		
 		if (args.length > 0) { 
 			for (String parameter : args) {
-				if (parameter.toLowerCase().equals("-debug")) {
+				if (parameter.toLowerCase().equals("-h") || parameter.toLowerCase().equals("--help")) {
+					System.out.println("Usage: java -jar firetelegram.jar");
+					System.out.println("  [-d|--debug]    print all log messages to console");
+					System.out.println("  [-i|--history]  take history alarms instead");
+					System.out.println("  [-t|--test]     test mode: fetch alarm + send to test telegram channel \n");
+		            return;
+		        }
+				else if (parameter.toLowerCase().equals("--debug") || parameter.toLowerCase().equals("-d")) {
 					DEBUG = true;
 				}
-				else if (parameter.toLowerCase().equals("-history")) {
+				else if (parameter.toLowerCase().equals("--history") || parameter.toLowerCase().equals("-i")) {
 					urlEinsatz = urlHistory;
+				}
+				else if (parameter.toLowerCase().equals("--test") || parameter.toLowerCase().equals("-t")) {
+					TESTMODE = true;
 				}
 			}
         } 
@@ -62,10 +73,8 @@ public class AlarmProcessor {
 				
 		final String cookieName = prop.getProperty("cookieSessIdKey");
 		final String cookieValue = prop.getProperty("cookieSessIdVal");
-		final String cookieName2 = prop.getProperty("cookieTokenIdKey");
-		final String cookieValue2 = prop.getProperty("cookieTokenIdVal");
-        final String telegramApiToken = prop.getProperty("telegramApiToken");
-        final String telegramChatId = prop.getProperty("telegramChatId");
+        final String telegramApiToken = (TESTMODE ? prop.getProperty("telegramApiTokenTest") : prop.getProperty("telegramApiToken"));
+        final String telegramChatId = (TESTMODE ? prop.getProperty("telegramChatIdTest") : prop.getProperty("telegramChatId"));
         
         final String processedAlarmsFileName = "processed_alarms.txt";
 		List<String> alreadyReportedAlarms = _readFile(processedAlarmsFileName);
@@ -75,13 +84,10 @@ public class AlarmProcessor {
 		if (newAlarm != null) {
 						
 			String alarmText = _parseAlarmText(newAlarm);
-			
+			_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
+
 			if (DEBUG) {
-				System.out.println("Processed alarm \"" + alarmText + "\" - no telegram message sent.");
-			}
-			else {
-				// Do not send telegram messages in debug mode
-				_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
+				System.out.println("Processed alarm \"" + alarmText + "\".");
 			}
 
 			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim());
@@ -219,31 +225,4 @@ public class AlarmProcessor {
 		return sb.toString();
 	}
 
-	
-	private static void _cookieTest(String httpsURL, String cookieName, String cookieValue) throws IOException {
-        HttpsURLConnection authCon = (HttpsURLConnection) new URL(httpsURL).openConnection();
-        authCon.setRequestProperty("Cookie", cookieName+"="+cookieValue);
-        authCon.connect();
-        
-        // temporary to build request cookie header
-        StringBuilder sb = new StringBuilder();
-
-        // find the cookies in the response header from the first request
-        List<String> cookies = authCon.getHeaderFields().get("Set-Cookie");
-        if (cookies != null) {
-            for (String cookie : cookies) {
-                if (sb.length() > 0) {
-                    sb.append("; ");
-                }
-
-                // only want the first part of the cookie header that has the value
-                String value = cookie.split(";")[0];
-                sb.append(value);
-            }
-        }
-
-        // build request cookie header to send on all subsequent requests
-        String cookieHeader = sb.toString();
-        System.out.println(cookieHeader);
-	}
 }
