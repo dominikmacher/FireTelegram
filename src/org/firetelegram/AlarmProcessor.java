@@ -1,19 +1,13 @@
 package org.firetelegram;
 
 import java.io.BufferedReader;
-
-
-
 import org.json.simple.JSONArray; 
 import org.json.simple.JSONObject; 
 import org.json.simple.parser.JSONParser; 
 import org.json.simple.parser.ParseException;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -24,12 +18,8 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-
-import javax.net.ssl.HttpsURLConnection;
 
 public class AlarmProcessor {
 
@@ -79,7 +69,11 @@ public class AlarmProcessor {
         final String processedAlarmsFileName = "processed_alarms.txt";
 		List<String> alreadyReportedAlarms = _readFile(processedAlarmsFileName);
 
-		String jsonContent = _getJsonData(urlEinsatz, cookieName, cookieValue);
+		if (DEBUG) {
+			System.out.println("Start fetching alarms from webservice");
+		}
+		
+		String jsonContent = _getJsonDataFromWebservice(urlEinsatz, cookieName, cookieValue);
 		JSONObject newAlarm = _checkForNewAlarm(jsonContent, alreadyReportedAlarms);
 		if (newAlarm != null) {
 						
@@ -201,26 +195,24 @@ public class AlarmProcessor {
 	}
 	
 
-	private static String _getJsonData(String httpsURL, String cookieName, String cookieValue) throws IOException {
-		HttpsURLConnection authCon = (HttpsURLConnection) new URL(httpsURL)
-				.openConnection();
-		authCon.setRequestProperty("Cookie", cookieName + "=" + cookieValue);
-		authCon.connect();
-
-		InputStream ins = authCon.getInputStream();
-		InputStreamReader isr = new InputStreamReader(ins, "UTF-8");
-		BufferedReader in = new BufferedReader(isr);
-		String inputLine;
-		
-		StringBuffer sb = new StringBuffer();
-		while ((inputLine = in.readLine()) != null) {
-			sb.append(inputLine);
-		}
-		in.close();
-
-		if (authCon != null) {
-			authCon.disconnect();
-		}
+	private static String _getJsonDataFromWebservice(String httpsURL, String cookieName, String cookieValue) throws IOException {
+		ProcessBuilder process = new ProcessBuilder("curl","--cookie",cookieName+"="+cookieValue,"-H","Accept: application/json",httpsURL);
+	    Process p;
+	    StringBuilder sb = new StringBuilder();
+	    
+	    try {
+	    	p = process.start();
+	    	BufferedReader reader =  new BufferedReader(new InputStreamReader(p.getInputStream(), "UTF-8"));
+	    	String line = null;
+	    	while ( (line = reader.readLine()) != null) {
+	    		sb.append(line);
+	    		sb.append(System.getProperty("line.separator"));
+	    	}
+	    }
+	    catch (IOException e) {   
+	    	System.out.print("ERROR during JSON data fetching via CURL");
+	    	e.printStackTrace();
+	    }
 		
 		return sb.toString();
 	}
