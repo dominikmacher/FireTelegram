@@ -1,10 +1,12 @@
 package org.firetelegram;
 
 import java.io.BufferedReader;
+
 import org.json.simple.JSONArray; 
 import org.json.simple.JSONObject; 
 import org.json.simple.parser.JSONParser; 
 import org.json.simple.parser.ParseException;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,7 +19,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
@@ -27,6 +31,12 @@ public class AlarmProcessor {
 	private static boolean TESTMODE = false;
 	
 	public static void main(String[] args) throws IOException {
+		
+		final String processedAlarmsFileName = "firetelegram_processed_alarms.txt";
+		final String lastProcessedAlarmFileName = "firetelegram_last_processed_alarm.txt";
+		final String statusSignalFileName = "firetelegram_status_signal.txt";
+		
+		SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 		
 		String urlEinsatz = "https://infoscreen.florian10.info/ows/infoscreen/einsatz.ashx";
 		String urlHistory = "https://infoscreen.florian10.info/ows/infoscreen/historic.ashx";
@@ -66,7 +76,6 @@ public class AlarmProcessor {
         final String telegramApiToken = (TESTMODE ? prop.getProperty("telegramApiTokenTest") : prop.getProperty("telegramApiToken"));
         final String telegramChatId = (TESTMODE ? prop.getProperty("telegramChatIdTest") : prop.getProperty("telegramChatId"));
         
-        final String processedAlarmsFileName = "processed_alarms.txt";
 		List<String> alreadyReportedAlarms = _readFile(processedAlarmsFileName);
 
 		if (DEBUG) {
@@ -84,7 +93,9 @@ public class AlarmProcessor {
 				System.out.println("Processed alarm \"" + alarmText + "\".");
 			}
 
-			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim());
+			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim(), true);
+			
+			_writeToFile(lastProcessedAlarmFileName, formatter.format(new Date()), false);
 		}
 		else {
 			if (DEBUG) {
@@ -95,7 +106,7 @@ public class AlarmProcessor {
 	}
 	
 	
-	private static void _writeToFile(String fileName, String text) {
+	private static void _writeToFile(String fileName, String text, boolean append) {
 		File file = new File(fileName);
 		try {
 			file.createNewFile();
@@ -104,7 +115,7 @@ public class AlarmProcessor {
 		} 
 		
 		try {
-			FileWriter fileWriter = new FileWriter(file, true);
+			FileWriter fileWriter = new FileWriter(file, append);
 			BufferedWriter bufWriter = new BufferedWriter(fileWriter);
 			bufWriter.write(text);
 			bufWriter.newLine();
