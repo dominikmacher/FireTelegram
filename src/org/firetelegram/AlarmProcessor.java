@@ -29,13 +29,14 @@ public class AlarmProcessor {
 
 	private static boolean DEBUG = false;
 	private static boolean TESTMODE = false;
-	private final static long MILLIS_PER_DAY = 24 * 60 * 60 * 1000L;
+	private final static long MILLIS_PER_HOUR = 60 * 60 * 1000L;
+	private final static long MILLIS_PER_DAY = 24 * MILLIS_PER_HOUR;
 	
 	public static void main(String[] args) throws IOException {
 		
 		final String processedAlarmsFileName = "firetelegram_processed_alarms.txt";
 		final String lastProcessedAlarmFileName = "firetelegram_last_processed_alarm.txt";
-		final String statusSignalFileName = "firetelegram_status_signal.txt";
+		final String aliveSignalFileName = "firetelegram_alive_signal.txt";
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 		
@@ -105,22 +106,22 @@ public class AlarmProcessor {
 		}
 		
 		Date newRuntime = new Date();
-		List<String> lastPrintTime = _readFile(statusSignalFileName);
+		List<String> lastPrintTime = _readFile(aliveSignalFileName);
 		if (lastPrintTime.size() > 0 && !(lastPrintTime.get(0).isEmpty())) {
 			try {
 				Date lastRuntime = formatter.parse(lastPrintTime.get(0));
-				if (Math.abs(lastRuntime.getTime() - newRuntime.getTime()) < MILLIS_PER_DAY) {
+				if (Math.abs(lastRuntime.getTime() - newRuntime.getTime()) < MILLIS_PER_HOUR) {
 					newRuntime = lastRuntime; 
 				}
 				else if (DEBUG) {
-					System.out.println("Updated status signal");
+					System.out.println("Updated alive signal");
 				}
 				
 			} catch (java.text.ParseException e) {
 				System.out.println("ERROR: cannot parse last-runtime date");
 			} 
 		}
-		_writeToFile(statusSignalFileName, formatter.format(newRuntime), false);
+		_writeToFile(aliveSignalFileName, formatter.format(newRuntime), false);
 	}
 	
 	
