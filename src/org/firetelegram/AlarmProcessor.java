@@ -29,6 +29,7 @@ public class AlarmProcessor {
 
 	private static boolean DEBUG = false;
 	private static boolean TESTMODE = false;
+	private final static long MILLIS_PER_DAY = 24 * 60 * 60 * 1000L;
 	
 	public static void main(String[] args) throws IOException {
 		
@@ -103,6 +104,26 @@ public class AlarmProcessor {
 			}
 		}
 		
+		Date newRuntime = new Date();
+		List<String> lastPrintTime = _readFile(statusSignalFileName);
+		if (lastPrintTime.size() > 0 && !(lastPrintTime.get(0).isEmpty())) {
+			try {
+				Date lastRuntime = formatter.parse(lastPrintTime.get(0));
+				if (Math.abs(lastRuntime.getTime() - newRuntime.getTime()) < MILLIS_PER_DAY) {
+					newRuntime = lastRuntime; 
+				}
+				else if (DEBUG) {
+					System.out.println("Updated status signal");
+				}
+				
+			} catch (java.text.ParseException e) {
+				System.out.println("ERROR: cannot parse last-runtime date");
+				
+			} finally {
+				// always write status to file:
+				_writeToFile(statusSignalFileName, formatter.format(newRuntime), false);
+			}
+		}
 	}
 	
 	
