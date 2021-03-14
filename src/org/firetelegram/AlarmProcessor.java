@@ -118,12 +118,9 @@ public class AlarmProcessor {
 				
 			} catch (java.text.ParseException e) {
 				System.out.println("ERROR: cannot parse last-runtime date");
-				
-			} finally {
-				// always write status to file:
-				_writeToFile(statusSignalFileName, formatter.format(newRuntime), false);
-			}
+			} 
 		}
+		_writeToFile(statusSignalFileName, formatter.format(newRuntime), false);
 	}
 	
 	
