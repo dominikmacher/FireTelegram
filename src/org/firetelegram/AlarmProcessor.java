@@ -97,7 +97,7 @@ public class AlarmProcessor {
 
 			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim(), true);
 			
-			_writeToFile(lastProcessedAlarmFileName, formatter.format(new Date()), false);
+			_writeToFile(lastProcessedAlarmFileName, formatter.format(new Date()) + " - " + alarmText, false);
 		}
 		else {
 			if (DEBUG) {
