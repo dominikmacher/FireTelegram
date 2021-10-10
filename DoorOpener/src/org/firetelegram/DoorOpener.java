@@ -15,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -31,15 +32,26 @@ public class DoorOpener {
 	
 	public static void main(String[] args) throws IOException {
 		
+		String fireTelegramJsonWebserviceUrl = "";
+		
 		if (args.length > 0) { 
 			for (String parameter : args) {
 				if (parameter.toLowerCase().equals("-h") || parameter.toLowerCase().equals("--help")) {
-					System.out.println("Usage: java -jar firetelegram.jar");
+					System.out.println("Usage: java -jar firetelegram_dooropener.jar [options] <url>");
 					System.out.println("  [-d|--debug]    print all log messages to console");
 		            return;
 		        }
 				else if (parameter.toLowerCase().equals("--debug") || parameter.toLowerCase().equals("-d")) {
 					DEBUG = true;
+				}
+				else {
+					// this would check for the protocol
+					URL u = new URL(parameter.toLowerCase()); 
+					try {
+						// does the extra checking required for validation of URI 
+						fireTelegramJsonWebserviceUrl = u.toURI().toString();
+					} catch (URISyntaxException e) {
+					} 
 				}
 			}
         } 
@@ -52,14 +64,16 @@ public class DoorOpener {
             return;
         }
         prop.load(inputStream);
-				
-		final String fireTelegramJsonWebservice = prop.getProperty("fireTelegramUrl");
+        
+        if (fireTelegramJsonWebserviceUrl.isEmpty()) {
+        	fireTelegramJsonWebserviceUrl = prop.getProperty("fireTelegramUrl");
+        }
 		
 		if (DEBUG) {
-			System.out.println("Start reading alarmstatus");
+			System.out.println("Start reading alarmstatus from " + fireTelegramJsonWebserviceUrl);
 		}
 		
-		Boolean activeAlarm = _getAlarmStatusFromFromJsonWebservice(fireTelegramJsonWebservice);
+		Boolean activeAlarm = _getAlarmStatusFromFromJsonWebservice(fireTelegramJsonWebserviceUrl);
 		
 		if (DEBUG) {
 			System.out.println("Active alarm \"" +  activeAlarm + "\".");
@@ -105,6 +119,7 @@ public class DoorOpener {
 		} 
 	    catch (ParseException e) {
 			System.out.println("ERROR during JSON parsing");
+			e.printStackTrace();
 		}
 		
 		return activeAlarm;
