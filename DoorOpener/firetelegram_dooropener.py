@@ -12,7 +12,7 @@ r = requests.get(url)
 data = r.json()
 if data["ACTIVE_ALARM"] :
   print("Active!")
-  gpio.output(ioPin, gpio.HIGH)
+  gpio.output(ioPin, gpio.LOW)
 else:
   print("Inactive")
-  gpio.output(ioPin, gpio.LOW)
+  gpio.output(ioPin, gpio.HIGH)
