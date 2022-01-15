@@ -211,7 +211,13 @@ public class AlarmProcessor {
 	private static String _parseAlarmText(JSONObject einsatz) {
 		String alarmstufe = einsatz.get("Alarmstufe").toString();
 		String titel = einsatz.get("Meldebild").toString();
-		String ort = (einsatz.get("Plz").toString()+" "+einsatz.get("Ort").toString()+" "+einsatz.get("Strasse").toString()).trim();
+		String ort = (einsatz.get("Plz").toString()+" "+einsatz.get("Ort").toString()).trim();
+		if (!einsatz.get("Strasse").toString().isEmpty()) {
+			ort+= ", " + einsatz.get("Strasse").toString().trim();
+		}
+		if (einsatz.containsKey("Nummer1") && !einsatz.get("Nummer1").toString().isEmpty()) {
+			ort+= " " + (int)Double.parseDouble(einsatz.get("Nummer1").toString());
+		}
 		String zusatzinfo = einsatz.get("Bemerkung").toString();
 		String zeit = einsatz.get("EinsatzErzeugt").toString().replace("T", " um ");
 		
