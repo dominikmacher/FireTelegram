@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AlarmProcessor {
 
@@ -77,6 +79,7 @@ public class AlarmProcessor {
 		final String cookieValue = prop.getProperty("cookieSessIdVal");
         final String telegramApiToken = (TESTMODE ? prop.getProperty("telegramApiTokenTest") : prop.getProperty("telegramApiToken"));
         final String telegramChatId = (TESTMODE ? prop.getProperty("telegramChatIdTest") : prop.getProperty("telegramChatId"));
+        final String nonAlarmCodes = prop.getProperty("nonAlarmCodes");
         
 		List<String> alreadyReportedAlarms = _readFile(processedAlarmsFileName);
 
@@ -89,7 +92,11 @@ public class AlarmProcessor {
 		if (newAlarm != null) {
 						
 			String alarmText = _parseAlarmText(newAlarm);
-			_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
+			
+			if (!_isNonAlarmCode(alarmText, nonAlarmCodes)) {
+				// only send out messages if there is a real alarm
+				_sendMessageToTelegram(alarmText, telegramApiToken, telegramChatId);
+			}
 
 			if (DEBUG) {
 				System.out.println("Processed alarm \"" + alarmText + "\".");
@@ -228,6 +235,25 @@ public class AlarmProcessor {
 		alarmText += ", " + zeit;
 		
 		return alarmText;
+	}
+	
+	
+	private static boolean _isNonAlarmCode(String alarmText, String nonAlarmCodes) {
+		
+		String[] nonAlarmCodesList = nonAlarmCodes.split(",");
+		
+	    Pattern p = Pattern.compile("([a-zA-Z]+)[0-9]* ");   // the pattern to search for
+	    Matcher m = p.matcher(alarmText);
+	    if (m.find())
+	    {
+	    	for (int i=0; i<nonAlarmCodesList.length; i++) {
+	    		if (nonAlarmCodesList[i].equals(m.group(1))) {
+	    			return true;
+	    		}
+	    	}
+	    }
+				
+		return false;
 	}
 	
 
