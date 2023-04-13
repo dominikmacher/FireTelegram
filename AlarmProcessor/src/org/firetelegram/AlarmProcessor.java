@@ -179,7 +179,7 @@ public class AlarmProcessor {
 	
 	
 	private static void _sendMessageToTelegram(String text, String apiToken, String chatId) {
-        String urlString = "https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s";
+		String urlString = "https://api.telegram.org/bot%s/sendMessage?chat_id=%s&text=%s";
         
         try {
         	urlString = String.format(urlString, apiToken, chatId, URLEncoder.encode(text, StandardCharsets.UTF_8.toString()));
@@ -233,6 +233,10 @@ public class AlarmProcessor {
 			alarmText += ", " + zusatzinfo;
 		}
 		alarmText += ", " + zeit;
+		
+		if (!einsatz.get("Lat").toString().isEmpty() && !einsatz.get("Lng").toString().isEmpty()) {
+			alarmText += ", https://maps.google.com/maps?q=" + einsatz.get("Lat").toString() + "," + einsatz.get("Lng").toString();
+		}
 		
 		return alarmText;
 	}
