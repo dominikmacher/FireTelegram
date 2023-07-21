@@ -246,7 +246,7 @@ public class AlarmProcessor {
 		
 		String[] nonAlarmCodesList = nonAlarmCodes.split(",");
 		
-	    Pattern p = Pattern.compile("([a-zA-Z]+)[0-9]* ");   // the pattern to search for
+	    Pattern p = Pattern.compile("([a-zA-Z]+[0-9]*) ");   // the pattern to search for
 	    Matcher m = p.matcher(alarmText);
 	    if (m.find())
 	    {
