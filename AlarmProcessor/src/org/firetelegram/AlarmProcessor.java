@@ -39,6 +39,7 @@ public class AlarmProcessor {
 		final String processedAlarmsFileName = "firetelegram_processed_alarms.txt";
 		final String lastProcessedAlarmFileName = "firetelegram_last_processed_alarm.txt";
 		final String aliveSignalFileName = "firetelegram_alive_signal.txt";
+		final String alarmLogFileName = "firetelegram_alarm_log.txt";
 		
 		SimpleDateFormat formatter = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
 		
@@ -100,9 +101,10 @@ public class AlarmProcessor {
 
 			if (DEBUG) {
 				System.out.println("Processed alarm \"" + alarmText + "\".");
+				_writeToFile(alarmLogFileName, "==========\nProcessed alarm \"" + alarmText + "\".", true);
 			}
 
-			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim(), true);
+			_writeToFile(processedAlarmsFileName, newAlarm.get("EinsatzNummer").toString().trim() + " " + newAlarm.get("Alarmstufe").toString(), true);
 			
 			_writeToFile(lastProcessedAlarmFileName, formatter.format(new Date()) + " - " + alarmText, false);
 		}
@@ -194,13 +196,22 @@ public class AlarmProcessor {
 	
 	private static JSONObject _checkForNewAlarm(String jsonContent, List<String> alreadyReportedAlarms) {
 		try {
-			JSONObject jObj = (JSONObject) new JSONParser().parse(jsonContent);
-			JSONArray jArr = (JSONArray)jObj.get("EinsatzData");
+			JSONObject jsonObj = (JSONObject) new JSONParser().parse(jsonContent);
+			JSONArray jsonArr = (JSONArray)jsonObj.get("EinsatzData");
 			
-			for (int i=0; i<jArr.size(); i++) {
-				JSONObject einsatz = (JSONObject) jArr.get(i);
-				String einsatzNr = einsatz.get("EinsatzNummer").toString();
-				if (alreadyReportedAlarms.contains(einsatzNr)) {
+			for (int i=0; i<jsonArr.size(); i++) {
+				JSONObject einsatz = (JSONObject) jsonArr.get(i);
+				String tmpAlarm = einsatz.get("EinsatzNummer").toString().trim() + " " + einsatz.get("Alarmstufe").toString();
+				
+				boolean alreadyReportedAlarm = false;
+				for (int j=0; j<alreadyReportedAlarms.size(); j++) {
+					if (alreadyReportedAlarms.get(j).contentEquals(tmpAlarm)) {
+						alreadyReportedAlarm = true;
+						break;
+					}
+				}
+				
+				if (alreadyReportedAlarm) {
 					continue;
 				}
 				
