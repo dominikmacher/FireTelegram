@@ -229,6 +229,7 @@ public class AlarmProcessor {
 	private static String _parseAlarmText(JSONObject einsatz) {
 		String alarmstufe = einsatz.get("Alarmstufe").toString();
 		String titel = einsatz.get("Meldebild").toString();
+		
 		String ort = (einsatz.get("Plz").toString()+" "+einsatz.get("Ort").toString()).trim();
 		if (!einsatz.get("Strasse").toString().isEmpty()) {
 			ort+= ", " + einsatz.get("Strasse").toString().trim();
@@ -236,14 +237,20 @@ public class AlarmProcessor {
 		if (einsatz.containsKey("Nummer1") && !einsatz.get("Nummer1").toString().isEmpty()) {
 			ort+= " " + (int)Double.parseDouble(einsatz.get("Nummer1").toString());
 		}
+		//new: if 'Objekt' is set, then take it as full address
+		String objekt = einsatz.get("Objekt").toString(); 
+		if (!objekt.isEmpty()) {
+			ort = objekt.trim();
+		}
+		
 		String zusatzinfo = einsatz.get("Bemerkung").toString();
 		String zeit = einsatz.get("EinsatzErzeugt").toString().replace("T", " um ");
 		
-		String alarmText = alarmstufe + " " + titel + ", " + ort;
+		String alarmText = alarmstufe + " " + titel;
 		if (!zusatzinfo.isEmpty()) {
 			alarmText += ", " + zusatzinfo;
 		}
-		alarmText += ", " + zeit;
+		alarmText += ", " + ort + ", " + zeit;
 		
 		if (!einsatz.get("Lat").toString().isEmpty() && !einsatz.get("Lng").toString().isEmpty()) {
 			alarmText += ", https://maps.google.com/maps?q=" + einsatz.get("Lat").toString() + "," + einsatz.get("Lng").toString();
